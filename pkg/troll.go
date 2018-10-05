@@ -63,7 +63,7 @@ func NewBridgeTroll(watchList []string) (troll *BridgeTroll, err error) {
 	return
 }
 
-func (t *BridgeTroll) Start() (*sync.WaitGroup, error) {
+func (t *BridgeTroll) Start(port *int) (*sync.WaitGroup, error) {
 	pod, err := t.Client.CoreV1().Pods(t.PodNamespace).Get(t.PodName, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pod details: %s", err)
@@ -87,8 +87,8 @@ func (t *BridgeTroll) Start() (*sync.WaitGroup, error) {
 		t.Hash = hash
 	}
 	http.Handle("/metrics", promhttp.Handler())
-	// TODO: Metrics port configurable
-	go http.ListenAndServe(":2112", nil)
+	addr := fmt.Sprint(":%d", *port)
+	go http.ListenAndServe(addr, nil)
 
 	hash, err := hashFiles(t.WatchList)
 	if err != nil {
