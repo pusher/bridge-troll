@@ -57,7 +57,7 @@ func NewBridgeTroll(watchList []string) (troll *BridgeTroll, err error) {
 	return
 }
 
-func (t *BridgeTroll) Start(port *int) (*sync.WaitGroup, error) {
+func (t *BridgeTroll) Start(port *int, metricsPath *string, interval *int) (*sync.WaitGroup, error) {
 	pod, err := t.Client.CoreV1().Pods(t.PodNamespace).Get(t.PodName, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pod details: %s", err)
@@ -80,17 +80,17 @@ func (t *BridgeTroll) Start(port *int) (*sync.WaitGroup, error) {
 		}
 		t.Hash = hash
 	}
-	http.Handle("/metrics", promhttp.Handler())
+	http.Handle(*metricsPath, promhttp.Handler())
 	addr := fmt.Sprintf(":%d", *port)
 	go http.ListenAndServe(addr, nil)
 
 	sync := &sync.WaitGroup{}
 	sync.Add(1)
-	go t.watch(sync)
+	go t.watch(sync, interval)
 	return sync, nil
 }
 
-func (t *BridgeTroll) watch(sync *sync.WaitGroup) {
+func (t *BridgeTroll) watch(sync *sync.WaitGroup, interval *int) {
 	defer sync.Done()
 	for {
 		hashOk, err := t.check()
@@ -102,7 +102,7 @@ func (t *BridgeTroll) watch(sync *sync.WaitGroup) {
 		} else {
 			staleMetric.Set(0)
 		}
-		time.Sleep(2 * time.Second)
+		time.Sleep(time.Duration(*interval) * time.Second)
 	}
 }
 
