@@ -18,12 +18,12 @@ but the processes may not become aware of this change until they (often accident
 Bridge Troll is meant to run as a "side-car" container inside a `Pod`, with the name and namespace
 passed in as environment variables.
 It will then calculate a hash on the contents of the provided set of files and store that hash as an
-`Annotation` on the `Pod` it is running in.
+`Annotation` (`bridge-troll.monitoring.pusher.com/original-config-hash`) on the `Pod` it is running in.
 
 It then commences to periodically compare the current hash of those files with the one calculated at `Pod` creation
 time.
 
-Bridge Troll emits a Prometheus metric `bridge-troll.monitoring.pusher.com/original-config-hash` which indicates
+Bridge Troll emits a Prometheus metric `troll_files_stale` which indicates
 whether any files have changed since the `Pod` was created.
 
 ## Usage
@@ -49,7 +49,7 @@ spec:
     containers:
     [...]
     - name: bridge-troll
-      image: quay.io/pusher/bridge-troll:v0.1
+      image: quay.io/pusher/bridge-troll:v0.1.0
       args: ["-f", "<some_file>", "-f", "<some_other_file>"]
       env:
         - name: POD_NAME
