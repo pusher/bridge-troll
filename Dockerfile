@@ -6,7 +6,7 @@ RUN go get -u github.com/golang/dep/cmd/dep \
  && cd cmd \
  && env GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o bridgetroll
 
-FROM scratch
+FROM alpine:latest
 COPY --from=builder /go/src/github.com/pusher/bridge-troll/cmd/bridgetroll /bin/bridgetroll
 
 ENTRYPOINT ["/bin/bridgetroll"]
