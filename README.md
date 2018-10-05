@@ -45,11 +45,12 @@ spec:
         prometheus.io/port: multiple
         prometheus.io/path: /metrics
   spec:
+    serviceAccount: <service_account_name>
     containers:
     [...]
     - name: bridge-troll
-      image: "quay.io/pusher/bridge-troll:v0.1"
-      args: ["-watchfile <some_file>", "-watchfile <some_other_file>"]
+      image: quay.io/pusher/bridge-troll:v0.1
+      args: ["-f", "<some_file>", "-f", "<some_other_file>"]
       env:
         - name: POD_NAME
           valueFrom:
@@ -62,6 +63,9 @@ spec:
       ports:
       - name: metrics
         containerPort: <metrics-port>
+      volumeMounts:
+      - mountPath: <some_path>
+        name: <shared_volume_with_watchfiles>
       resources:
         limits:
           cpu: 100m
@@ -82,4 +86,44 @@ Bridge Troll supports the following options:
 -m, --metrics-path string     The path for the metrics endpoint (default "/metrics")
 -p, --metrics-port int        The metrics port to use (default 2112)
 -f, --watchfile stringArray   The file to watch. Can be used multiple times
+```
+
+## RBAC
+
+If you are using RBAC, you will need to provide a service account for the container and grant it the required permissions.
+
+Example:
+
+```
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: update-pods
+  namespace: default
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - get
+  - list
+  - update
+  - patch
+```
+
+```
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: update-pods
+  namespace: default
+subjects:
+- kind: ServiceAccount
+  name: <service_account_name>
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: update-pods
 ```
