@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	troll "github.com/gargath/bridge-troll/pkg"
+	troll "github.com/pusher/bridge-troll/pkg"
 	flag "github.com/spf13/pflag"
 )
 
