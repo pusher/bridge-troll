@@ -18,7 +18,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-const TrollAnnotationKey = "bridge-troll.monitoring.pusher.com/actual-config-hash"
+const TrollAnnotationKey = "bridge-troll.monitoring.pusher.com/original-config-hash"
 
 var staleMetric = promauto.NewGauge(prometheus.GaugeOpts{
 	Name: "troll_files_stale",
@@ -54,12 +54,6 @@ func NewBridgeTroll(watchList []string) (troll *BridgeTroll, err error) {
 		PodName:      podName,
 		PodNamespace: podNamespace,
 	}
-	troll = &BridgeTroll{
-		WatchList:    watchList,
-		Client:       nil,
-		PodName:      "",
-		PodNamespace: "",
-	}
 	return
 }
 
@@ -87,14 +81,9 @@ func (t *BridgeTroll) Start(port *int) (*sync.WaitGroup, error) {
 		t.Hash = hash
 	}
 	http.Handle("/metrics", promhttp.Handler())
-	addr := fmt.Sprint(":%d", *port)
+	addr := fmt.Sprintf(":%d", *port)
 	go http.ListenAndServe(addr, nil)
 
-	hash, err := hashFiles(t.WatchList)
-	if err != nil {
-		return nil, fmt.Errorf("unable to hash files: %s", err)
-	}
-	t.Hash = hash
 	sync := &sync.WaitGroup{}
 	sync.Add(1)
 	go t.watch(sync)
@@ -103,15 +92,12 @@ func (t *BridgeTroll) Start(port *int) (*sync.WaitGroup, error) {
 
 func (t *BridgeTroll) watch(sync *sync.WaitGroup) {
 	defer sync.Done()
-	var status bool
-	var err error
 	for {
-		status, err = t.check()
+		hashOk, err := t.check()
 		if err != nil {
-			fmt.Printf("Error in goroutine: %s", err)
 			panic(err)
 		}
-		if !status {
+		if !hashOk {
 			staleMetric.Set(1)
 		} else {
 			staleMetric.Set(0)

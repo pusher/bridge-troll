@@ -8,6 +8,7 @@ import (
 	flag "github.com/spf13/pflag"
 )
 
+// TODO: Maybe use StringSliceP?
 var watchFiles = flag.StringArrayP("watchfile", "f", nil, "The file to watch. Can be used multiple times")
 var port = flag.IntP("metrics-port", "p", 2112, "The metrics port to use")
 var help = flag.BoolP("help", "h", false, "This help")
@@ -20,13 +21,14 @@ func main() {
 	}
 	troll, err := troll.NewBridgeTroll(*watchFiles)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to start BridgeTroll: %v\n\n", err)
+		fmt.Fprintf(os.Stderr, "Failed to initialize BridgeTroll: %v\n\n", err)
 		Usage()
 		os.Exit(1)
 	}
 	sync, err := troll.Start(port)
 	if err != nil {
-		panic(err)
+		fmt.Fprintf(os.Stderr, "Failed to start BridgeTroll: %v\n\n", err)
+		os.Exit(1)
 	}
 	sync.Wait()
 }
